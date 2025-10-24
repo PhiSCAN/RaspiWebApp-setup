@@ -1,0 +1,212 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    /* background-color: #2c2c2c; */
+    background-image: url("/static/images/bg.png");
+    background-repeat: no-repeat;
+    /* backdrop-filter: blur(5px);  */
+    background-size: 100% 100%;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    font-size: 20px;
+    font-weight: bold;
+    color: white;
+}
+
+.button-container {
+    display: flex;
+    gap: 20px;
+    flex-direction: column;
+}
+
+.button-blue {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.button-yellow {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    color: #202020;
+    background-color: #ffd000;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.button-green {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    color: #202020;
+    background-color: #88ff00;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.button-pink {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    color: #202020;
+    background-color: #ff00ea;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.button-red {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    color: #000000;
+    background-color: #ff0000;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.button-red:hover {
+    background-color: #c90000;
+}
+
+.button-pink:hover {
+    background-color: #bd00ad;
+}
+
+.button-blue:hover {
+    background-color: #0056b3;
+}
+
+.button-yellow:hover {
+    background-color: #c4a000;
+}
+
+.button-green:hover {
+    background-color: #68c201;
+}
+
+.button-blue:active {
+    background-color: #004494;
+}
+
+.button-middle {
+    position: relative;
+    /* top: 10px; */
+}
+
+.dots {
+    display: flex;
+    gap: 5px;
+    flex-direction: column;
+}
+
+.dots>div {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.dot0,
+.dot4,
+.dot1,
+.dot5,
+.dot2,
+.dot6,
+.dot3,
+.dot7,
+.dot8,
+.dot9 {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    background-color: #ffffff;
+    /* #54f709 */
+}
+
+.dot-red {
+    background-color: red;
+}
+
+.dot-green {
+    background-color: #54f709;
+}
+
+.dot-yellow {
+    background-color: #ffd000;
+}
+
+.text-red {
+    color: red;
+}
+
+.text-green {
+    color: #54f709;
+}
+
+.text-yellow {
+    color: #ffd000;
+}
+
+.inp {
+    width: 70px;
+    font-size: 20px;
+}
+
+.container_left,
+.container_right {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+    border-radius: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.statuses li {
+    width: 35rem;
+    display: flex;
+    justify-content: space-between;
+}
+
+.btn-style-1 {
+    background: rgba(0, 0, 0, 0.1);
+    /* box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37); */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: white;
+    font-size: 20px;
+}
