@@ -462,11 +462,6 @@ def unmount_pendrive():
 def handle_live_counter():
     return jsonify({"isAlive":True})
 
-@app.get("/poweroff")
-def handle_poweroff():
-    subprocess.run(["poweroff"], check=True)
-    return jsonify({"poweroff":True})
-
 @app.get("/bags/<action>")
 def handle_bags(action):
     try:

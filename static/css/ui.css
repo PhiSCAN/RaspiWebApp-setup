@@ -6,6 +6,25 @@
 body {
     background: rgb(21, 35, 55);
 }
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    /* semi-transparent black */
+    z-index: 9999;
+    /* higher than everything else */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wrap-word {
+    word-wrap: break-word;
+}
+
 .datapath {
     margin-right: auto;
     align-self: center;
@@ -23,13 +42,14 @@ body {
 }
 
 .nav-part {
-    border: 1px solid yellow;
+    /* border: 1px solid yellow; */
     /* width: 100%; */
     height: 100px;
     display: flex;
     justify-content: space-between;
+    padding: 0 15%;
 }
-.nav-part > div{
+.nav-part > div {
     width: 20%;
     height: 100%;
     display: flex;
@@ -39,7 +59,6 @@ body {
 
 .body-part {
     height: 90%;
-    padding: 60px;
 }
 
 .inner-body {

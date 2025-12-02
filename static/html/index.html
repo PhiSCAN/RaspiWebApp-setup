@@ -547,7 +547,7 @@
                     setDialog("COPYING.......");
                     const counterId = setInterval(() => {
                         fetch(
-                            `http://127.0.0.1:8000/file-count?pd=${selectedPd}`,
+                            `http://10.42.0.1:8000/file-count?pd=${selectedPd}`,
                             {
                                 method: "GET",
                                 headers: {
@@ -770,7 +770,8 @@
                 }
 
                 function powerOff() {
-                    fetch("/poweroff")
+
+                    fetch("http://10.42.0.1:8000/poweroff")
                         .then((res) => res.json())
                         .then((d) => console.log(d))
                         .catch((err) =>
@@ -816,6 +817,28 @@
 
                 return (
                     <div className="main-container">
+                        {showOverlay && (
+                            <div className="overlay text-white">
+                                {copiedFileCount !== null &&
+                                dialog.toLowerCase().includes("copy") ? (
+                                    <ProgressBar
+                                        value={copiedFileCount}
+                                        label={`${
+                                            copiedData.copiedCount ?? 0
+                                        }/${copiedData.localCount ?? 0}`}
+                                    />
+                                ) : (
+                                    <h2>
+                                        {dialog}
+                                        {copiedFileCount !== null &&
+                                            dialog
+                                                .toLowerCase()
+                                                .includes("copy") &&
+                                            ` - ${copiedFileCount}`}
+                                    </h2>
+                                )}
+                            </div>
+                        )}
                         <div className="nav-part">
                             <div></div>
                             <div>
@@ -837,7 +860,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div className="body-part">
+                        <div className="body-part" style={{padding:isMobile?"0":"60px", marginBottom:isMobile?"40px":"auto"}}>
                             <div className="inner-body">
                                 <div className="container-upper">
                                     <div>
@@ -849,7 +872,7 @@
                                                 <div>Motor Speed: </div>
                                                 <div>
                                                     <button
-                                                        className="btn btn-secondary btn-sm"
+                                                        className="btn btn-secondary btn-sm wrap-word"
                                                         onClick={() =>
                                                             setCustVel((prev) =>
                                                                 prev > 1
@@ -861,12 +884,12 @@
                                                         {"-"}
                                                     </button>{" "}
                                                     &nbsp;
-                                                    <button className="btn btn-secondary btn-sm">
+                                                    <button className="btn btn-secondary btn-sm wrap-word">
                                                         {custVel}
                                                     </button>{" "}
                                                     &nbsp;
                                                     <button
-                                                        className="btn btn-secondary btn-sm"
+                                                        className="btn btn-secondary btn-sm wrap-word"
                                                         onClick={() =>
                                                             setCustVel((prev) =>
                                                                 prev < 10
@@ -911,7 +934,7 @@
                                         </div>
                                         <div className="bottom">
                                             <button
-                                                className="btn btn-secondary btn-sm w-50"
+                                                className="btn btn-secondary btn-sm w-50 wrap-word"
                                                 onClick={() =>
                                                     startMotor(custVel)
                                                 }
@@ -919,7 +942,7 @@
                                                 Start Motor {`(v=${custVel})`}
                                             </button>
                                             <button
-                                                className="btn btn-danger btn-sm w-50"
+                                                className="btn btn-danger btn-sm w-50 wrap-word"
                                                 onClick={stopMotor}
                                             >
                                                 Stop Motor
@@ -950,7 +973,7 @@
                                         </div>
                                         <div className="bottom">
                                             <button
-                                                className="btn btn-secondary btn-sm w-100"
+                                                className="btn btn-secondary btn-sm w-100 wrap-word"
                                                 onClick={initializeLidar}
                                             >
                                                 Initialize Sensors
@@ -1012,12 +1035,12 @@
                                         <div className="bottom">
                                             <button
                                                 onClick={startRecording}
-                                                className="btn btn-secondary btn-sm w-50"
+                                                className="btn btn-secondary btn-sm w-50 wrap-word"
                                             >
                                                 Start Recording
                                             </button>
                                             <button
-                                                className="btn btn-danger btn-sm w-50"
+                                                className="btn btn-danger btn-sm w-50 wrap-word"
                                                 onClick={stopRecording}
                                             >
                                                 Stop Recording/Sensors
@@ -1038,7 +1061,7 @@
                                                 }}
                                             >
                                                 <button
-                                                    className="btn btn-secondary btn-sm"
+                                                    className="btn btn-secondary btn-sm wrap-word"
                                                     onClick={copyLocalData}
                                                 >
                                                     Transfer Data
@@ -1099,13 +1122,13 @@
                                         <div className="bottom">
                                             <button
                                                 onClick={listLocalRosbags}
-                                                className="btn btn-secondary btn-sm w-50"
+                                                className="btn btn-secondary btn-sm w-50 wrap-word"
                                             >
                                                 Refresh
                                             </button>
                                             <button
                                                 onClick={deleteLocalRosbags}
-                                                className="btn btn-secondary btn-danger btn-sm w-50"
+                                                className="btn btn-secondary btn-danger btn-sm w-50 wrap-word"
                                             >
                                                 Delete All
                                             </button>
@@ -1122,6 +1145,7 @@
                                                     gap: "10px",
                                                     marginBottom: "10px",
                                                     justifyContent: "flex-end",
+                                                    flexWrap:"wrap"
                                                 }}
                                             >
                                                 {selectedPd && (
@@ -1156,14 +1180,14 @@
                                                     ))}
                                                 </select>
                                                 <button
-                                                    className="btn btn-secondary btn-sm"
+                                                    className="btn btn-secondary btn-sm wrap-word"
                                                     onClick={listPendrives}
                                                 >
                                                     Refresh
                                                 </button>
                                                 {selectedPd && (
                                                     <button
-                                                        className="btn btn-secondary btn-warning btn-sm"
+                                                        className="btn btn-secondary btn-warning btn-sm wrap-word"
                                                         onClick={() =>
                                                             unmountPendrive()
                                                         }
@@ -1248,7 +1272,7 @@
                                         {selectedPd && (
                                             <div className="bottom">
                                                 <button
-                                                    className="btn btn-secondary btn-sm w-50"
+                                                    className="btn btn-secondary btn-sm w-50 wrap-word"
                                                     onClick={() =>
                                                         listPdRosbags(
                                                             selectedPd
@@ -1257,7 +1281,7 @@
                                                 >
                                                     Refresh
                                                 </button>
-                                                <button className="btn btn-secondary btn-danger btn-sm w-50">
+                                                <button className="btn btn-secondary btn-danger btn-sm w-50 wrap-word" onClick={deletePdRosbags}>
                                                     Delete All
                                                 </button>
                                             </div>
