@@ -39,8 +39,8 @@ def _loop_runner():
 threading.Thread(target=_loop_runner, daemon=True).start()
 
 scanner_ip = "http://192.168.1.80:3000"
-# local_rosbag_path = f"/rosbags"
-local_rosbag_path = f"/home/sajjad/rosbags"
+local_rosbag_path = f"/rosbags"
+# local_rosbag_path = f"/home/sajjad/rosbags"
 
 PASSWORD = "raspberry"
 eth_iface = "eth0"
@@ -200,6 +200,16 @@ def topic_statuses():
     except Exception as e:
         return jsonify({"success": False, "msg": str(e)})
 
+@app.get("/file-count")
+def handle_file_count():
+    try:
+        pd = request.args.get("pd")
+        res = requests.get(f"http://127.0.0.1:8000/file-count?pd={pd}")
+        jsonData = res.json()
+
+        return jsonify(jsonData)
+    except Exception as e:
+        return jsonify({"err":str(e)})
 
 @app.get("/turn-off-lidarmotor")
 def turn_off_lidar_motor():
@@ -461,6 +471,30 @@ def unmount_pendrive():
 @app.get("/alive")
 def handle_live_counter():
     return jsonify({"isAlive":True})
+
+@app.get("/poweroff")
+def handle_poweroff():
+    try:
+        res = requests.get(
+            f"http://127.0.0.1:8000/poweroff",
+            timeout=30,
+        )
+        resp = res.json()
+        return jsonify({"poweroff":True})
+    except Exception as e:
+        return jsonify({"poweroff":False, "err":str(e)})
+
+@app.get("/reboot")
+def handle_reboot():
+    try:
+        res = requests.get(
+            f"http://127.0.0.1:8000/reboot",
+            timeout=30,
+        )
+        resp = res.json()
+        return jsonify(resp)
+    except Exception as e:
+        return jsonify({"rebooting":False, "err":str(e)})
 
 @app.get("/bags/<action>")
 def handle_bags(action):

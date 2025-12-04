@@ -141,6 +141,7 @@
 
             function ProgressBar({ value = 0, label = "0/0" }) {
                 const clamped = Math.min(100, Math.max(0, value));
+                // clamped = 32
 
                 return (
                     <div
@@ -151,7 +152,7 @@
                             className="progress-fill"
                             style={{ width: `${clamped}%` }}
                         />
-                        <div className="progress-label">copying... {label}</div>
+                        <div className="progress-label">copying... {label} <img width="20px" src="/static/icons/loading.gif" alt="loading" /></div>
                     </div>
                 );
             }
@@ -198,6 +199,7 @@
                 const isMobile = useMediaQuery("(max-width: 768px)");
                 const { time, stopWatch } = useStopWatch();
                 const [isAlive, setIsAlive] = useState(false);
+                const [isPowerToggled, setIsPowerToggled] = useState(false);
                 const resetAllButtonStatus = () => {
                     setButtonStates({
                         dataSync: -1,
@@ -230,9 +232,13 @@
                     let liveId = setInterval(() => {
                         fetch("/alive")
                             .then((res) => res.json())
-                            .then((d) => setIsAlive(d.isAlive))
+                            .then((d) => {
+                                setIsAlive(d.isAlive);
+                                setIsPowerToggled(false);
+                            })
                             .catch((err) => {
                                 setIsAlive(false);
+                                setIsPowerToggled(false);
                                 // clearInterval(liveId);
                             });
                     }, 2000);
@@ -546,15 +552,12 @@
                     setShowOverlay(true);
                     setDialog("COPYING.......");
                     const counterId = setInterval(() => {
-                        fetch(
-                            `http://10.42.0.1:8000/file-count?pd=${selectedPd}`,
-                            {
-                                method: "GET",
-                                headers: {
-                                    "Content-Type": "application/json",
-                                },
-                            }
-                        )
+                        fetch(`/file-count?pd=${selectedPd}`, {
+                            method: "GET",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                        })
                             .then((res) => res.json())
                             .then((resData) => {
                                 setCopiedFileCount(
@@ -575,7 +578,7 @@
                                 setCopiedFileCount(null);
                                 clearInterval(counterId);
                             });
-                    }, 1000);
+                    }, 500);
                     const rosbagResp = await fetch(
                         `/bags/copy?pd=${selectedPd}`,
                         {
@@ -681,7 +684,7 @@
                     setButtonStates((prevState) => {
                         return { ...prevState, imuOff: 2 };
                     });
-                    stopWatch("stop");
+                    stopWatch("reset");
                     const imuResponse = await fetch("/imu/off", {
                         method: "GET",
                         headers: {
@@ -770,13 +773,24 @@
                 }
 
                 function powerOff() {
-
-                    fetch("http://10.42.0.1:8000/poweroff")
+                    setIsPowerToggled(true);
+                    fetch("/poweroff")
                         .then((res) => res.json())
                         .then((d) => console.log(d))
-                        .catch((err) =>
-                            console.log("poweroff_err", err.message)
-                        );
+                        .catch((err) => {
+                            console.log("poweroff_err", err.message);
+                            setIsPowerToggled(false);
+                        });
+                }
+                function rebootPi() {
+                    setIsPowerToggled(true);
+                    fetch("/reboot")
+                        .then((res) => res.json())
+                        .then((d) => console.log(d))
+                        .catch((err) => {
+                            setIsPowerToggled(false);
+                            console.log("reboot_err", err.message);
+                        });
                 }
 
                 async function startSendingTimestamps(fps) {
@@ -844,23 +858,54 @@
                             <div>
                                 <button
                                     onClick={powerOff}
+                                    style={{ background: "transparent" }}
+                                    disabled={!isAlive || isPowerToggled}
                                     className="btn btn-secondary"
+                                    title="System Shutdown"
                                 >
-                                    {" "}
-                                    <span
-                                        style={{
-                                            color: isAlive
-                                                ? "limegreen"
-                                                : "red",
-                                        }}
-                                    >
-                                        &#9679;
-                                    </span>{" "}
-                                    Power On/Off
+                                    {isAlive && !isPowerToggled ? (
+                                        <img
+                                            src="/static/icons/power-g.png"
+                                            width="32px"
+                                            alt="Alive"
+                                        />
+                                    ) : isAlive && isPowerToggled ? (
+                                        <img
+                                            src="/static/icons/loading.gif"
+                                            width="32px"
+                                            alt="loading"
+                                        />
+                                    ) : (
+                                        <img
+                                            src="/static/icons/power-r.png"
+                                            width="32px"
+                                            alt="Dead"
+                                        />
+                                    )}
+                                </button>
+                                &nbsp;
+                                <button
+                                    onClick={rebootPi}
+                                    style={{ background: "transparent" }}
+                                    className="btn btn-secondary"
+                                    title="System Reboot"
+                                >
+                                    <img
+                                        style={{ filter: "invert()" }}
+                                        src="/static/icons/return.png"
+                                        width="32px"
+                                        alt="reboot"
+                                    />
                                 </button>
                             </div>
                         </div>
-                        <div className="body-part" style={{padding:isMobile?"0":"60px", marginBottom:isMobile?"40px":"auto"}}>
+                        <div
+                            className="body-part"
+                            style={{
+                                padding: isMobile ? "0" : "60px",
+                                marginBottom: isMobile ? "40px" : "auto",
+                            }}
+                        >
                             <div className="inner-body">
                                 <div className="container-upper">
                                     <div>
@@ -935,6 +980,11 @@
                                         <div className="bottom">
                                             <button
                                                 className="btn btn-secondary btn-sm w-50 wrap-word"
+                                                disabled={
+                                                    buttonStates.motorOn ===
+                                                        2 ||
+                                                    buttonStates.motorOn === 1
+                                                }
                                                 onClick={() =>
                                                     startMotor(custVel)
                                                 }
@@ -974,6 +1024,16 @@
                                         <div className="bottom">
                                             <button
                                                 className="btn btn-secondary btn-sm w-100 wrap-word"
+                                                disabled={
+                                                    (buttonStates.dataSync ===
+                                                        2 ||
+                                                        buttonStates.lidarOn ===
+                                                            2) ||
+                                                    (buttonStates.dataSync ===
+                                                        1 ||
+                                                        buttonStates.lidarOn ===
+                                                            1)
+                                                }
                                                 onClick={initializeLidar}
                                             >
                                                 Initialize Sensors
@@ -1036,6 +1096,7 @@
                                             <button
                                                 onClick={startRecording}
                                                 className="btn btn-secondary btn-sm w-50 wrap-word"
+                                                disabled={buttonStates.startRec === 2 || buttonStates.startRec === 1}
                                             >
                                                 Start Recording
                                             </button>
@@ -1145,7 +1206,7 @@
                                                     gap: "10px",
                                                     marginBottom: "10px",
                                                     justifyContent: "flex-end",
-                                                    flexWrap:"wrap"
+                                                    flexWrap: "wrap",
                                                 }}
                                             >
                                                 {selectedPd && (
@@ -1183,7 +1244,7 @@
                                                     className="btn btn-secondary btn-sm wrap-word"
                                                     onClick={listPendrives}
                                                 >
-                                                    Refresh
+                                                    Refresh Mounted Drives
                                                 </button>
                                                 {selectedPd && (
                                                     <button
@@ -1281,7 +1342,10 @@
                                                 >
                                                     Refresh
                                                 </button>
-                                                <button className="btn btn-secondary btn-danger btn-sm w-50 wrap-word" onClick={deletePdRosbags}>
+                                                <button
+                                                    className="btn btn-secondary btn-danger btn-sm w-50 wrap-word"
+                                                    onClick={deletePdRosbags}
+                                                >
                                                     Delete All
                                                 </button>
                                             </div>
