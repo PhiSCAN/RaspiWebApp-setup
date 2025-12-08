@@ -4,7 +4,13 @@
     color: white;
 }
 body {
-    background: rgb(21, 35, 55);
+    /* background: rgb(21, 35, 55); */
+    background-image: url(/static/images/bg.png);
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+#root{
+    overflow-y: hidden;
 }
 .overlay {
     position: fixed;
@@ -22,7 +28,7 @@ body {
 }
 .progress-container {
     width: 50%;
-    height: 16px;
+    height: 35px;
     background: #e5e7eb; /* gray-200 */
     border-radius: 12px;
     overflow: hidden;
@@ -48,7 +54,7 @@ body {
     align-items: center;
     justify-content: center;
     color: rgb(0, 0, 0);
-    font-size: 12px;
+    font-size: 20px;
     font-weight: 600;
     pointer-events: none;
 }

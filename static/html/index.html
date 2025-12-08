@@ -152,7 +152,14 @@
                             className="progress-fill"
                             style={{ width: `${clamped}%` }}
                         />
-                        <div className="progress-label">copying... {label} <img width="20px" src="/static/icons/loading.gif" alt="loading" /></div>
+                        <div className="progress-label">
+                            Copying {label}{" "}
+                            <img
+                                width="24px"
+                                src="/static/icons/loading.gif"
+                                alt="loading"
+                            />
+                        </div>
                     </div>
                 );
             }
@@ -199,6 +206,8 @@
                 const isMobile = useMediaQuery("(max-width: 768px)");
                 const { time, stopWatch } = useStopWatch();
                 const [isAlive, setIsAlive] = useState(false);
+                const [dataSize, setDataSize] = useState(0);
+                const [pdDataSize, setPdDataSize] = useState(0);
                 const [isPowerToggled, setIsPowerToggled] = useState(false);
                 const resetAllButtonStatus = () => {
                     setButtonStates({
@@ -435,6 +444,7 @@
                         alert(rosbagResult.msg);
                     } else {
                         setBagsList(rosbagResult.data);
+                        setDataSize(rosbagResult.size??0);
                     }
                 }
 
@@ -591,6 +601,8 @@
                     const rosbagResult = await rosbagResp.json();
                     if (!rosbagResult.success) {
                         alert(rosbagResult.msg);
+                        setShowOverlay(false)
+                        setDialog("")
                     } else {
                         listPdRosbags(selectedPd);
                         // alert("COPIED ALL FILES TO PENDRIVE!!!!!!!");
@@ -667,6 +679,7 @@
                         alert(rosbagResult.msg);
                     } else {
                         setPdBagsList(rosbagResult.data);
+                        setPdDataSize(rosbagResult.size??0);
                     }
                 }
 
@@ -1025,14 +1038,13 @@
                                             <button
                                                 className="btn btn-secondary btn-sm w-100 wrap-word"
                                                 disabled={
-                                                    (buttonStates.dataSync ===
+                                                    buttonStates.dataSync ===
                                                         2 ||
-                                                        buttonStates.lidarOn ===
-                                                            2) ||
-                                                    (buttonStates.dataSync ===
+                                                    buttonStates.lidarOn ===
+                                                        2 ||
+                                                    buttonStates.dataSync ===
                                                         1 ||
-                                                        buttonStates.lidarOn ===
-                                                            1)
+                                                    buttonStates.lidarOn === 1
                                                 }
                                                 onClick={initializeLidar}
                                             >
@@ -1096,7 +1108,11 @@
                                             <button
                                                 onClick={startRecording}
                                                 className="btn btn-secondary btn-sm w-50 wrap-word"
-                                                disabled={buttonStates.startRec === 2 || buttonStates.startRec === 1}
+                                                disabled={
+                                                    buttonStates.startRec ===
+                                                        2 ||
+                                                    buttonStates.startRec === 1
+                                                }
                                             >
                                                 Start Recording
                                             </button>
@@ -1121,6 +1137,9 @@
                                                     justifyContent: "flex-end",
                                                 }}
                                             >
+                                                <div className="datapath">
+                                                    TOTAL_SIZE: {dataSize !== 0 ? dataSize : ''}
+                                                </div>
                                                 <button
                                                     className="btn btn-secondary btn-sm wrap-word"
                                                     onClick={copyLocalData}
@@ -1211,8 +1230,8 @@
                                             >
                                                 {selectedPd && (
                                                     <div className="datapath">
-                                                        Data Path: /{selectedPd}
-                                                        /rosbags
+                                                        Data in <span style={{color:"lime"}}>/{selectedPd}
+                                                        /rosbags/</span> {pdDataSize !== 0 ? `(${pdDataSize})` : ''}
                                                     </div>
                                                 )}
                                                 <select

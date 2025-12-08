@@ -39,8 +39,8 @@ def _loop_runner():
 threading.Thread(target=_loop_runner, daemon=True).start()
 
 scanner_ip = "http://192.168.1.80:3000"
-local_rosbag_path = f"/rosbags"
-# local_rosbag_path = f"/home/sajjad/rosbags"
+# local_rosbag_path = f"/rosbags"
+local_rosbag_path = f"/home/sajjad/rosbags"
 
 PASSWORD = "raspberry"
 eth_iface = "eth0"
@@ -507,19 +507,21 @@ def handle_bags(action):
             if resp["success"] == False:
                 raise Exception("no list")
             return jsonify(
-                {"success": True, "msg": "rosbag list", "data": resp["data"]}
+                {"success": True, "msg": "rosbag list", "data": resp["data"], "size":resp["size"]}
             )
         if action == "show-ld":
             rosbags_list = []
+            total_size = 0
             for filename in os.listdir(local_rosbag_path):
                 filepath = os.path.join(local_rosbag_path, filename)
                 if os.path.isfile(filepath):
                     size_bytes = os.path.getsize(filepath)
+                    total_size+=size_bytes
                     rosbags_list.append(f"{filename} {format_size(size_bytes)}")
             # rosbags_list = os.listdir(local_rosbag_path)
             rosbags_list.sort(key=natural_keys)
             return jsonify(
-                {"success": True, "msg": "rosbag list", "data": rosbags_list}
+                {"success": True, "msg": "rosbag list", "data": rosbags_list, "size":format_size(total_size)}
             )
         elif action == "delete-ld":
             rosbags_list = os.listdir(local_rosbag_path)
