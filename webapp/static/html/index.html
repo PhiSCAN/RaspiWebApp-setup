@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="/static/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="/static/css/ui.css" />
+
+        <title>SCANNER</title>
+    </head>
+
+    <body>
+        <div id="root"></div>
+
+        <!-- React and ReactDOM CDN -->
+        <script src="/static/js/react.development.js" crossorigin></script>
+        <script src="/static/js/react-dom.development.js" crossorigin></script>
+
+        <!-- Babel CDN -->
+        <script src="/static/js/babel.min.js"></script>
+
+        <!-- Your React code -->
+        <script type="text/babel">
+            var globModalOpen = false;
+            const { useState, useEffect, useRef } = React;
+
+            function useStopWatch() {
+                const [time, setTime] = useState("00:00:00");
+
+                const intervalRef = useRef(null);
+                const startTimeRef = useRef(null);
+                const elapsedRef = useRef(0);
+
+                // Format seconds → "hh:mm:ss"
+                function format(t) {
+                    const hrs = String(Math.floor(t / 3600)).padStart(2, "0");
+                    const mins = String(Math.floor((t % 3600) / 60)).padStart(
+                        2,
+                        "0"
+                    );
+                    const secs = String(Math.floor(t % 60)).padStart(2, "0");
+                    return `${hrs}:${mins}:${secs}`;
+                }
+
+                function stopWatch(action) {
+                    if (action === "start") {
+                        if (!intervalRef.current) {
+                            startTimeRef.current =
+                                Date.now() - elapsedRef.current * 1000;
+
+                            intervalRef.current = setInterval(() => {
+                                const elapsed =
+                                    (Date.now() - startTimeRef.current) / 1000;
+                                elapsedRef.current = elapsed;
+                                setTime(format(elapsed));
+                            }, 1000);
+                        }
+                    }
+
+                    if (action === "stop") {
+                        if (intervalRef.current) {
+                            clearInterval(intervalRef.current);
+                            intervalRef.current = null;
+
+                            const elapsed =
+                                (Date.now() - startTimeRef.current) / 1000;
+                            elapsedRef.current = elapsed;
+                            setTime(format(elapsed));
+                        }
+                    }
+
+                    if (action === "reset") {
+                        clearInterval(intervalRef.current);
+                        intervalRef.current = null;
+                        elapsedRef.current = 0;
+                        startTimeRef.current = null;
+                        setTime("00:00:00");
+                    }
+                }
+
+                return { time, stopWatch };
+            }
+
+            const StatusEl = ({ state, text }) => {
+                return (
+                    <div>
+                        <div>{text}</div>{" "}
+                        <div
+                            className={
+                                state == 0
+                                    ? "color-error"
+                                    : state == 1
+                                    ? "color-success"
+                                    : state == 2
+                                    ? "color-warning"
+                                    : "color-disabled"
+                            }
+                        >
+                            {state == 0
+                                ? "Error"
+                                : state == 1
+                                ? "Done"
+                                : state == 2
+                                ? "Progress..."
+                                : "-"}
+                        </div>
+                    </div>
+                );
+            };
+
+            function Dot({ state }) {
+                return (
+                    <div
+                        className={`dot0 ${
+                            state == 0
+                                ? "dot-red"
+                                : state == 1
+                                ? "dot-green"
+                                : ""
+                        }`}
+                    ></div>
+                );
+            }
+
+            function useMediaQuery(query) {
+                const [matches, setMatches] = useState(
+                    () => window.matchMedia(query).matches
+                );
+
+                useEffect(() => {
+                    const mediaQueryList = window.matchMedia(query);
+                    const listener = (event) => setMatches(event.matches);
+
+                    mediaQueryList.addEventListener("change", listener); // modern API
+                    return () =>
+                        mediaQueryList.removeEventListener("change", listener);
+                }, [query]);
+
+                return matches;
+            }
+
+            function ProgressBar({ value = 0, label = "0/0" }) {
+                const clamped = Math.min(100, Math.max(0, value));
+                // clamped = 32
+
+                return (
+                    <div
+                        className="progress-container"
+                        style={{ position: "relative" }}
+                    >
+                        <div
+                            className="progress-fill"
+                            style={{ width: `${clamped}%` }}
+                        />
+                        <div className="progress-label">
+                            Copying {label}{" "}
+                            <img
+                                width="24px"
+                                src="/static/icons/loading.gif"
+                                alt="loading"
+                            />
+                        </div>
+                    </div>
+                );
+            }
+
+            function LogsComponent({ setShowLogs, showLogs, isMobile }) {
+                const [logs, setLogs] = useState([]);
+                const intervalId = useRef(null);
+                const scrollRef = useRef(null);
+
+                function arraysEqual(a, b) {
+                    if (a === b) return true; // same reference
+                    if (a.length !== b.length) return false;
+
+                    for (let i = 0; i < a.length; i++) {
+                        if (a[i] !== b[i]) return false;
+                    }
+                    return true;
+                }
+
+                useEffect(() => {
+                    if (intervalId.current) {
+                        clearInterval(intervalId.current);
+                    }
+                    if (scrollRef.current) {
+                        scrollRef.current.scrollTop =
+                            scrollRef.current.scrollHeight;
+                    }
+
+                    intervalId.current = setInterval(() => {
+                        console.log("logginnggg....");
+                        fetch("/logs")
+                            .then((res) => res.json())
+                            .then((data) => {
+                                if (!arraysEqual(logs, data)) {
+                                    setLogs(data);
+                                }
+                            })
+                            .catch((err) => {
+                                console.log(err.message);
+                            });
+                    }, 2000);
+                    return () => clearInterval(intervalId.current);
+                }, [logs]);
+                return (
+                    <div className="log-body">
+                        <div className="action-bar">
+                            <div className="text-dark p-2 fw-bold">
+                                Server Logs
+                            </div>
+                            <div
+                                className="btn btn-danger rounded"
+                                onClick={() => setShowLogs(false)}
+                            >
+                                X
+                            </div>
+                        </div>
+                        <div className={`logs`} style={{fontSize:isMobile?12:14}} ref={scrollRef}>
+                            {logs.length > 0 ? (
+                                logs.map((log,i) => {
+                                    const type = log.split(" - ");
+                                    console.log(type);
+                                    const lineColor = type.includes("INFO")
+                                        ? "lime"
+                                        : type.includes("ERROR")
+                                        ? "red"
+                                        : "orange";
+                                    return (
+                                        <p
+                                            key={log.split(" - ")[0]}
+                                            style={{ color: lineColor, borderBottom:"1px solid #ffffff2e" }}
+                                        >
+                                            <span style={{fontSize:"14px"}}>{i}&#8627; </span>{log}
+                                        </p>
+                                    );
+                                })
+                            ) : (
+                                <p align="center">Fetching Latest Logs...</p>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            function App() {
+                // -1 ->idle 0->danger 1->success 2->progress
+
+                var numAttempts = 0;
+                var intervalId = null;
+
+                const [buttonStates, setButtonStates] = useState({
+                    dataSync: -1,
+                    imuOn: -1,
+                    imu2On: -1,
+                    lidarOn: -1,
+                    motorOn: -1,
+                    stopRec: -1,
+                    startRec: -1,
+                    motorOff: -1,
+                    imuOff: -1,
+                    lidarOff: -1,
+                    gpsOn: -1,
+                });
+                const [showOverlay, setShowOverlay] = useState(false);
+                const [dialog, setDialog] = useState("");
+                const [vel, setVel] = useState(5);
+                const [direction, setDirection] = useState(1);
+                const [custVel, setCustVel] = useState(10);
+                const [bagsList, setBagsList] = useState([]);
+                const [pdBagsList, setPdBagsList] = useState([]);
+                const [selectedPd, setSelectedPd] = useState("");
+                const [pendrives, setPendrives] = useState([]);
+                const [dataType, setDataType] = useState([]);
+                const [copying, setCopying] = useState(false);
+                const [startedMotor, setStartedMotor] = useState(false);
+                const [lidarInitialized, setLidarInitialized] = useState(false);
+                const [recordingStarted, setRecordingStarted] = useState(false);
+                const [rpm, setRpm] = useState(300);
+                const [udpStarted, setUdpStarted] = useState(false);
+                const [udpStatus, setUdpStatus] = useState("Idle");
+                const [fps, setFps] = useState(10);
+                const [copiedData, setCopiedData] = useState({});
+                const [copiedFileCount, setCopiedFileCount] = useState(null);
+                const isMobile = useMediaQuery("(max-width: 768px)");
+                const { time, stopWatch } = useStopWatch();
+                const [isAlive, setIsAlive] = useState(false);
+                const [dataSize, setDataSize] = useState(0);
+                const [pdDataSize, setPdDataSize] = useState(0);
+                const [isPowerToggled, setIsPowerToggled] = useState(false);
+                const [showLogs, setShowLogs] = useState(false);
+                const resetAllButtonStatus = () => {
+                    setButtonStates({
+                        dataSync: -1,
+                        imuOn: -1,
+                        imu2On: -1,
+                        lidarOn: -1,
+                        motorOn: -1,
+                        stopRec: -1,
+                        startRec: -1,
+                        motorOff: -1,
+                        imuOff: -1,
+                        lidarOff: -1,
+                        gpsOn: -1,
+                    });
+                };
+
+                const resetStopButtonStatuses = () => {
+                    setButtonStates({
+                        stopRec: -1,
+                        motorOff: -1,
+                        imuOff: -1,
+                        lidarOff: -1,
+                        gpsOn: -1,
+                    });
+                };
+
+                useEffect(() => {
+                    listLocalRosbags();
+                    listPendrives();
+                    let liveId = setInterval(() => {
+                        fetch("/alive")
+                            .then((res) => res.json())
+                            .then((d) => {
+                                setIsAlive(d.isAlive);
+                                setIsPowerToggled(false);
+                            })
+                            .catch((err) => {
+                                setIsAlive(false);
+                                setIsPowerToggled(false);
+                                // clearInterval(liveId);
+                            });
+                    }, 2000);
+
+                    return () => clearInterval(liveId);
+                }, []);
+
+                async function initializeLidar() {
+                    resetAllButtonStatus();
+
+                    setButtonStates((prevState) => {
+                        return { ...prevState, dataSync: 2 };
+                    });
+                    const ptpdResponse = await fetch("/ptpd/on", {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const ptpdResult = await ptpdResponse.json();
+                    const rosResponse = await fetch("/roscore/on", {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const rosResult = await rosResponse.json();
+                    if (ptpdResult.success && rosResult.success) {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, dataSync: 1 };
+                        });
+                    } else {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, dataSync: 0 };
+                        });
+                        throw Error("datasync issue");
+                    }
+
+                    setButtonStates((prevState) => {
+                        return { ...prevState, imuOn: 2, imu2On: 2 };
+                    });
+                    const imuResponse = await fetch("/imu/on", {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+
+                    const imuResult = await imuResponse.json();
+                    if (!imuResult.success) {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, imuOn: 0, imu2On: 0 };
+                        });
+                    } else {
+                        // setButtonStates((prevState) => { return { ...prevState, imuOn: 1 } })
+                    }
+
+                    setButtonStates((prevState) => {
+                        return { ...prevState, lidarOn: 2 };
+                    });
+                    const lidarResponse = await fetch(`/lidar/on`, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const lidarResult = await lidarResponse.json();
+                    if (!lidarResult.success) {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, lidarOn: 0 };
+                        });
+                    } else {
+                        // setStatuses(2, "done", lidarResult.msg);
+                        // checkReadiness(3)
+                    }
+
+                    const statusResponse = await fetch("/topic-statuses", {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const statusResult = await statusResponse.json();
+                    if (statusResult.success) {
+                        const statusData = statusResult.data;
+                        setButtonStates((prevState) => {
+                            return {
+                                ...prevState,
+                                imuOn: statusData[0] ? 1 : 0,
+                                imu2On: statusData[1] ? 1 : 0,
+                                lidarOn: statusData[2] ? 1 : 0,
+                            };
+                        });
+                        setLidarInitialized(true);
+                    } else {
+                        console.log({ statusResult });
+                        alert("error");
+                    }
+                }
+
+                async function startGPS() {
+                    setButtonStates((prevState) => {
+                        return { ...prevState, gpsOn: 2 };
+                    });
+                    const gpsResponse = await fetch(`/gps/status`, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    try {
+                        const gpsResult = await gpsResponse.json();
+                        if (!gpsResult.success) {
+                            setButtonStates((prevState) => {
+                                return { ...prevState, gpsOn: 0 };
+                            });
+                        } else {
+                            setButtonStates((prevState) => {
+                                return { ...prevState, gpsOn: 1 };
+                            });
+                            // setStatuses(2, "done", lidarResult.msg);
+                            // checkReadiness(3)
+                        }
+                    } catch (err) {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, gpsOn: 0 };
+                        });
+                    }
+                }
+
+                async function startMotor(vel) {
+                    setButtonStates((prevState) => {
+                        return { ...prevState, motorOn: 2 };
+                    });
+                    const motorResponse = await fetch(
+                        `/change-lidar-rot-speed?vel=${vel}`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                        }
+                    );
+                    const motorResult = await motorResponse.json();
+                    if (!motorResult.success) {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, motorOn: 0 };
+                        });
+                    } else {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, motorOn: 1, motorOff: -1 };
+                        });
+                        setTimeout(() => {
+                            setStartedMotor(true);
+                        }, 3000);
+                    }
+                }
+
+                async function listPendrives() {
+                    const pdResp = await fetch(`/list-pd`, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const pdResult = await pdResp.json();
+                    if (!pdResult.success) {
+                        setPendrives([]);
+                        setSelectedPd("");
+                        alert(pdResult.msg);
+                    } else {
+                        setPendrives(pdResult.data);
+                        if (selectedPd && !pdResult.data.includes(selectedPd)) {
+                            alert(`${selectedPd} got ejected`);
+                            setSelectedPd("");
+                            setDialog("");
+                            setShowOverlay(false);
+                        }
+                    }
+                }
+
+                async function listLocalRosbags() {
+                    setDataType("LOCAL");
+                    setBagsList(["loading...."]);
+                    const rosbagResp = await fetch(`/bags/show-ld`, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const rosbagResult = await rosbagResp.json();
+                    if (!rosbagResult.success) {
+                        setBagsList(["ERROR"]);
+                        alert(rosbagResult.msg);
+                    } else {
+                        setBagsList(rosbagResult.data);
+                        setDataSize(rosbagResult.size ?? 0);
+                    }
+                }
+
+                async function deleteLocalRosbags() {
+                    if (!confirm("ARE YOU SURE TO DELETE ALL DATA????")) return;
+                    setBagsList(["deleting...."]);
+                    const rosbagResp = await fetch(`/bags/delete-ld`, {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const rosbagResult = await rosbagResp.json();
+                    if (!rosbagResult.success) {
+                        setBagsList(["ERROR"]);
+                        alert(rosbagResult.msg);
+                    } else {
+                        listLocalRosbags();
+                    }
+                }
+
+                async function deletePdRosbags() {
+                    if (
+                        !confirm("ARE YOU SURE TO DELETE ALL PENDRIVE DATA????")
+                    )
+                        return;
+                    setPdBagsList(["deleting...."]);
+                    const rosbagResp = await fetch(
+                        `/bags/delete-pd?pd=${selectedPd}`,
+                        {
+                            method: "GET",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                        }
+                    );
+                    const rosbagResult = await rosbagResp.json();
+                    if (!rosbagResult.success) {
+                        setPdBagsList(["ERROR"]);
+                        alert(rosbagResult.msg);
+                    } else {
+                        listPdRosbags(selectedPd);
+                    }
+                }
+
+                async function unmountPendrive() {
+                    try {
+                        if (
+                            !confirm(
+                                `ARE YOU SURE TO UNMOUNT ${selectedPd}????`
+                            )
+                        )
+                            return;
+                        setPdBagsList(["Unmounting...."]);
+                        setShowOverlay(true);
+                        setDialog("UNMOUNTING.......");
+                        const controller = new AbortController();
+
+                        const id = setTimeout(() => controller.abort(), 5000);
+
+                        const rosbagResp = await fetch(
+                            `/unmount-pd?pd=${selectedPd}`,
+                            {
+                                method: "GET",
+                                signal: controller.signal,
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                            }
+                        );
+                        clearTimeout(id);
+
+                        const rosbagResult = await rosbagResp.json();
+                        if (!rosbagResult.success) {
+                            alert(rosbagResult.data.script_output);
+                        } else {
+                            if (rosbagResult.data.success) {
+                                alert(`UNMOUNTED ${selectedPd}`);
+                                setSelectedPd("");
+                                setPendrives([]);
+                                setTimeout(() => {
+                                    listPendrives();
+                                }, 100);
+                            } else {
+                                // alert("Something went wrong")
+                                setTimeout(() => {
+                                    listPendrives();
+                                }, 100);
+                            }
+                        }
+                        setShowOverlay(false);
+                        setDialog("");
+                    } catch (err) {
+                        intervalId = setInterval(() => {
+                            if (numAttempts >= 1) {
+                                clearInterval(intervalId);
+                                setShowOverlay(false);
+                                setDialog("");
+                            } else {
+                                listPendrives();
+                            }
+                            numAttempts++;
+                        }, 2000);
+                    }
+                }
+
+                async function copyLocalData() {
+                    if (
+                        !confirm(
+                            "ARE YOU SURE TO COPY ALL DATA TO PENDRIVE????"
+                        )
+                    )
+                        return;
+                    // setPendrives(["deleting...."]);
+                    setShowOverlay(true);
+                    setDialog("COPYING.......");
+                    const counterId = setInterval(() => {
+                        fetch(`/file-count?pd=${selectedPd}`, {
+                            method: "GET",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                        })
+                            .then((res) => res.json())
+                            .then((resData) => {
+                                setCopiedFileCount(
+                                    (resData.data.copiedCount /
+                                        resData.data.localCount) *
+                                        100
+                                );
+                                setCopiedData(resData.data);
+                                if (
+                                    resData.data.copiedCount /
+                                        resData.data.localCount ===
+                                    1
+                                ) {
+                                    clearInterval(counterId);
+                                }
+                            })
+                            .catch((err) => {
+                                setCopiedFileCount(null);
+                                clearInterval(counterId);
+                            });
+                    }, 500);
+                    const rosbagResp = await fetch(
+                        `/bags/copy?pd=${selectedPd}`,
+                        {
+                            method: "GET",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                        }
+                    );
+                    const rosbagResult = await rosbagResp.json();
+                    if (!rosbagResult.success) {
+                        alert(rosbagResult.msg);
+                        setShowOverlay(false);
+                        setDialog("");
+                    } else {
+                        listPdRosbags(selectedPd);
+                        // alert("COPIED ALL FILES TO PENDRIVE!!!!!!!");
+                        setTimeout(() => {
+                            setShowOverlay(false);
+                            setDialog();
+                        }, 1000);
+                    }
+                    // setShowOverlay(false);
+                    // setDialog();
+                }
+
+                async function stopMotor() {
+                    setButtonStates((prevState) => {
+                        return { ...prevState, motorOff: 2 };
+                    });
+                    const motorResponse = await fetch("/turn-off-lidarmotor", {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const motorResult = await motorResponse.json();
+                    if (!motorResult.success) {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, motorOff: 0 };
+                        });
+                    } else {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, motorOff: 1, motorOn: -1 };
+                        });
+                    }
+                }
+
+                async function startRecording() {
+                    setButtonStates((prevState) => {
+                        return { ...prevState, startRec: 2 };
+                    });
+                    stopWatch("start");
+                    const recordResponse = await fetch("/record/on", {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const recordResult = await recordResponse.json();
+                    if (!recordResult.success) {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, startRec: 0 };
+                        });
+                        alert(recordResponse.msg);
+                    } else {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, startRec: 1 };
+                        });
+                        setRecordingStarted(true);
+                    }
+                }
+
+                async function listPdRosbags(pendrive) {
+                    setPdBagsList(["Loading....."]);
+                    const rosbagResp = await fetch(
+                        `/bags/show-pd?pd=${pendrive}`,
+                        {
+                            method: "GET",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                        }
+                    );
+                    const rosbagResult = await rosbagResp.json();
+                    if (!rosbagResult.success) {
+                        setPdBagsList(["ERROR"]);
+                        alert(rosbagResult.msg);
+                    } else {
+                        setPdBagsList(rosbagResult.data);
+                        setPdDataSize(rosbagResult.size ?? 0);
+                    }
+                }
+
+                async function handlePdSelect(e) {
+                    setSelectedPd(e.target.value);
+                    if (!e.target.value) {
+                        setSelectedPd("");
+                        setPdBagsList([]);
+                        return;
+                    }
+                    listPdRosbags(e.target.value);
+                }
+
+                async function stopRecording() {
+                    setButtonStates((prevState) => {
+                        return { ...prevState, imuOff: 2 };
+                    });
+                    stopWatch("reset");
+                    const imuResponse = await fetch("/imu/off", {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const imuResult = await imuResponse.json();
+                    if (!imuResult.success) {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, imuOff: 0 };
+                        });
+                        setStartedMotor(false);
+                    } else {
+                        setButtonStates((prevState) => {
+                            return {
+                                ...prevState,
+                                imuOff: 1,
+                                imuOn: -1,
+                                imu2On: -1,
+                            };
+                        });
+                    }
+
+                    setButtonStates((prevState) => {
+                        return { ...prevState, lidarOff: 2 };
+                    });
+
+                    const gpsResponese = await fetch("/gps/off", {
+                        method: "GET",
+
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    setButtonStates((prevState) => {
+                        return { ...prevState, stopRec: 2, dataSync: -1 };
+                    });
+
+                    const lidarResponse = await fetch("/lidar/off", {
+                        method: "GET",
+
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const lidarResult = await lidarResponse.json();
+                    if (!lidarResult.success) {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, lidarOff: 0 };
+                        });
+                    } else {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, lidarOff: 1, lidarOn: -1 };
+                        });
+                    }
+
+                    setButtonStates((prevState) => {
+                        return { ...prevState, stopRec: 2, dataSync: -1 };
+                    });
+                    const rosResponse = await fetch("/roscore/off", {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const rosResult = await rosResponse.json();
+
+                    const recResponse = await fetch("/record/off", {
+                        method: "GET",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    });
+                    const recResult = await recResponse.json();
+                    if (!recResult.success) {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, stopRec: 0 };
+                        });
+                    } else {
+                        setButtonStates((prevState) => {
+                            return { ...prevState, stopRec: 1, startRec: -1 };
+                        });
+                        setLidarInitialized(false);
+                        setRecordingStarted(false);
+                    }
+                }
+
+                function powerOff() {
+                    setIsPowerToggled(true);
+                    fetch("/poweroff")
+                        .then((res) => res.json())
+                        .then((d) => console.log(d))
+                        .catch((err) => {
+                            console.log("poweroff_err", err.message);
+                            setIsPowerToggled(false);
+                        });
+                }
+                function rebootPi() {
+                    setIsPowerToggled(true);
+                    fetch("/reboot")
+                        .then((res) => res.json())
+                        .then((d) => console.log(d))
+                        .catch((err) => {
+                            setIsPowerToggled(false);
+                            console.log("reboot_err", err.message);
+                        });
+                }
+
+                async function startSendingTimestamps(fps) {
+                    if (!udpStarted) {
+                        setUdpStatus("Starting...");
+                        try {
+                            const resp = await fetch("/start-udp", {
+                                method: "POST",
+                                body: JSON.stringify({ fps }),
+                                headers: { "Content-Type": "application/json" },
+                            });
+                            const result = await resp.json();
+                            console.log(result);
+                            setUdpStatus(result.msg);
+                            setUdpStarted(true);
+                        } catch (error) {
+                            console.log(error.message);
+                            setUdpStatus("Error");
+                            setUdpStarted(false);
+                        }
+                    } else {
+                        try {
+                            setUdpStatus("Stopping...");
+                            const resp = await fetch("/stop-udp", {
+                                method: "GET",
+                                headers: { "Content-Type": "application/json" },
+                            });
+                            const result = await resp.json();
+                            console.log(result);
+                            setUdpStatus("Idle");
+                            setUdpStarted(false);
+                        } catch (error) {
+                            console.log(error.message);
+                            setUdpStatus("Error");
+                        }
+                    }
+                }
+
+                return (
+                    <div className="main-container">
+                        {showOverlay && (
+                            <div className="overlay text-white">
+                                {copiedFileCount !== null &&
+                                dialog.toLowerCase().includes("copy") ? (
+                                    <ProgressBar
+                                        value={copiedFileCount}
+                                        label={`${
+                                            copiedData.copiedCount ?? 0
+                                        }/${copiedData.localCount ?? 0}`}
+                                    />
+                                ) : (
+                                    <h2>
+                                        {dialog}
+                                        {copiedFileCount !== null &&
+                                            dialog
+                                                .toLowerCase()
+                                                .includes("copy") &&
+                                            ` - ${copiedFileCount}`}
+                                    </h2>
+                                )}
+                            </div>
+                        )}
+                        <div className="nav-part mt-2">
+                            <div
+                                style={{
+                                    width: 400,
+                                    display: "flex",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                <img
+                                    src="/static/icons/phi-logo.png"
+                                    alt="Phicode"
+                                    width="42px"
+                                />
+                                <div>
+                                    {" "}
+                                    <h4>PhiSCAN</h4>{" "}
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            className="body-part"
+                            style={{
+                                padding: isMobile ? "0" : "10px 60px 60px 60px",
+                                marginBottom: isMobile ? "40px" : "auto",
+                            }}
+                        >
+                            <div className="inner-body">
+                                {showLogs && (
+                                    <LogsComponent showLogs={showLogs} setShowLogs={setShowLogs} isMobile={isMobile} />
+                                )}
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        gap: "10px",
+                                        flexWrap: "wrap-reverse",
+                                    }}
+                                >
+                                    <div
+                                        class="btn-group"
+                                        style={{
+                                            width: isMobile ? "100%" : "auto",
+                                        }}
+                                    >
+                                        <button
+                                            className="btn btn-secondary"
+                                            onClick={() =>
+                                                setFps((prev) =>
+                                                    prev <= 10 ? 10 : prev - 1
+                                                )
+                                            }
+                                        >
+                                            {" "}
+                                            -{" "}
+                                        </button>
+                                        <button
+                                            className="btn btn-secondary"
+                                            title="Timer speed"
+                                        >
+                                            {" "}
+                                            {fps}{" "}
+                                        </button>
+                                        <button
+                                            className="btn btn-secondary"
+                                            onClick={() =>
+                                                setFps((prev) =>
+                                                    prev >= 60 ? 60 : prev + 1
+                                                )
+                                            }
+                                        >
+                                            {" "}
+                                            +{" "}
+                                        </button>
+                                        <button
+                                            className={`btn ${
+                                                !udpStarted
+                                                    ? "btn-primary"
+                                                    : "btn-danger"
+                                            }`}
+                                            onClick={() => {
+                                                startSendingTimestamps(fps);
+                                            }}
+                                        >
+                                            {udpStarted
+                                                ? "Stop UDP"
+                                                : "Start UDP"}{" "}
+                                            &nbsp;
+                                            <span style={{ fontSize: "12px" }}>
+                                                server state:{" "}
+                                                <span
+                                                    style={{
+                                                        color:
+                                                            udpStatus ===
+                                                            "Active"
+                                                                ? "lime"
+                                                                : udpStatus ===
+                                                                  "Idle"
+                                                                ? "white"
+                                                                : "red",
+                                                    }}
+                                                >
+                                                    ({udpStatus})
+                                                </span>
+                                            </span>
+                                        </button>
+                                    </div>
+                                    <div className="btn-group">
+                                        <button
+                                            className="btn btn-light"
+                                            onClick={() => setShowLogs(true)}
+                                        >
+                                            <img
+                                                src="/static/icons/terminal.png"
+                                                width="28px"
+                                                alt="Alive"
+                                            />
+                                        </button>
+                                        <button
+                                            onClick={powerOff}
+                                            style={{
+                                                background: "transparent",
+                                            }}
+                                            disabled={
+                                                !isAlive || isPowerToggled
+                                            }
+                                            className="btn btn-secondary"
+                                            title="System Shutdown"
+                                        >
+                                            {isAlive && !isPowerToggled ? (
+                                                <img
+                                                    src="/static/icons/power-g.png"
+                                                    width="28px"
+                                                    alt="Alive"
+                                                />
+                                            ) : isAlive && isPowerToggled ? (
+                                                <img
+                                                    src="/static/icons/loading.gif"
+                                                    width="28px"
+                                                    alt="loading"
+                                                />
+                                            ) : (
+                                                <img
+                                                    src="/static/icons/power-r.png"
+                                                    width="28px"
+                                                    alt="Dead"
+                                                />
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={rebootPi}
+                                            style={{
+                                                background: "transparent",
+                                            }}
+                                            className="btn btn-secondary"
+                                            title="System Reboot"
+                                        >
+                                            <img
+                                                style={{ filter: "invert()" }}
+                                                src="/static/icons/return.png"
+                                                width="28px"
+                                                alt="reboot"
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="container-upper">
+                                    <div>
+                                        <div className="heading">
+                                            <h4>Motor Control</h4>
+                                        </div>
+                                        <div className="middle">
+                                            <div>
+                                                <div>Motor Speed: </div>
+                                                <div
+                                                    className="btn-group"
+                                                    style={{ width: 150 }}
+                                                >
+                                                    <button
+                                                        className="btn btn-secondary btn-sm wrap-word"
+                                                        onClick={() =>
+                                                            setCustVel((prev) =>
+                                                                prev > 1
+                                                                    ? prev - 1
+                                                                    : 1
+                                                            )
+                                                        }
+                                                    >
+                                                        {"-"}
+                                                    </button>
+
+                                                    <button className="btn btn-secondary btn-sm wrap-word">
+                                                        {custVel}
+                                                    </button>
+
+                                                    <button
+                                                        className="btn btn-secondary btn-sm wrap-word"
+                                                        onClick={() =>
+                                                            setCustVel((prev) =>
+                                                                prev < 10
+                                                                    ? prev + 1
+                                                                    : 10
+                                                            )
+                                                        }
+                                                    >
+                                                        {"+"}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div>Direction:</div>
+                                                <div style={{ width: 150 }}>
+                                                    <select
+                                                        className="form-select-sm w-100"
+                                                        style={{
+                                                            background: "grey",
+                                                        }}
+                                                    >
+                                                        <option
+                                                            value="1"
+                                                            selected
+                                                        >
+                                                            Clockwise
+                                                        </option>
+                                                        <option value="2">
+                                                            Anti-lockwise
+                                                        </option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <StatusEl
+                                                state={buttonStates["motorOn"]}
+                                                text="Start Motor:"
+                                            />
+                                            <StatusEl
+                                                state={buttonStates["motorOff"]}
+                                                text="Stop Motor:"
+                                            />
+                                        </div>
+                                        <div className="bottom">
+                                            <button
+                                                className="btn btn-secondary btn-sm w-50 wrap-word"
+                                                disabled={
+                                                    buttonStates.motorOn ===
+                                                        2 ||
+                                                    buttonStates.motorOn === 1
+                                                }
+                                                onClick={() =>
+                                                    startMotor(custVel)
+                                                }
+                                            >
+                                                Start Motor {`(v=${custVel})`}
+                                            </button>
+                                            <button
+                                                className="btn btn-danger btn-sm w-50 wrap-word"
+                                                onClick={stopMotor}
+                                            >
+                                                Stop Motor
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="heading">
+                                            <h4>Sensor Status</h4>
+                                        </div>
+                                        <div className="middle">
+                                            <StatusEl
+                                                state={buttonStates["dataSync"]}
+                                                text="Data Syncing:"
+                                            />
+                                            <StatusEl
+                                                state={buttonStates["imuOn"]}
+                                                text="IMU 1 Status:"
+                                            />
+                                            <StatusEl
+                                                state={buttonStates["imu2On"]}
+                                                text="IMU 2 Status:"
+                                            />
+                                            <StatusEl
+                                                state={buttonStates["lidarOn"]}
+                                                text="Lidar Status:"
+                                            />
+                                        </div>
+                                        <div className="bottom">
+                                            <button
+                                                className="btn btn-secondary btn-sm w-100 wrap-word"
+                                                disabled={
+                                                    buttonStates.dataSync ===
+                                                        2 ||
+                                                    buttonStates.lidarOn ===
+                                                        2 ||
+                                                    buttonStates.dataSync ===
+                                                        1 ||
+                                                    buttonStates.lidarOn === 1
+                                                }
+                                                onClick={initializeLidar}
+                                            >
+                                                Initialize Sensors
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="heading">
+                                            <h4>Record</h4>
+                                        </div>
+                                        <div className="middle">
+                                            {false ? (
+                                                <StatusEl
+                                                    state={
+                                                        buttonStates["startRec"]
+                                                    }
+                                                    text="Record Status:"
+                                                />
+                                            ) : (
+                                                <>
+                                                    <StatusEl
+                                                        state={
+                                                            buttonStates[
+                                                                "imuOff"
+                                                            ]
+                                                        }
+                                                        text="Stop imu process:"
+                                                    />
+                                                    <StatusEl
+                                                        state={
+                                                            buttonStates[
+                                                                "lidarOff"
+                                                            ]
+                                                        }
+                                                        text="Stop Lidar process:"
+                                                    />
+                                                    <StatusEl
+                                                        state={
+                                                            buttonStates[
+                                                                "stopRec"
+                                                            ]
+                                                        }
+                                                        text="Stop Recording:"
+                                                    />
+                                                </>
+                                            )}
+                                            <div>
+                                                <div
+                                                    className="color-error"
+                                                    style={{ fontSize: "28px" }}
+                                                >
+                                                    &#9679;{" "}
+                                                    <span className="color-white">
+                                                        {time}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="bottom">
+                                            <button
+                                                onClick={startRecording}
+                                                className="btn btn-secondary btn-sm w-50 wrap-word"
+                                                disabled={
+                                                    buttonStates.startRec ===
+                                                        2 ||
+                                                    buttonStates.startRec === 1
+                                                }
+                                            >
+                                                Start Recording
+                                            </button>
+                                            <button
+                                                className="btn btn-danger btn-sm w-50 wrap-word"
+                                                onClick={stopRecording}
+                                            >
+                                                Stop Recording/Sensors
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="container-lower">
+                                    <div>
+                                        <div className="heading">
+                                            <h4>Data in Device</h4>
+                                            <div
+                                                style={{
+                                                    display: "flex",
+                                                    gap: "10px",
+                                                    marginBottom: "10px",
+                                                    justifyContent: "flex-end",
+                                                }}
+                                            >
+                                                <div className="datapath">
+                                                    TOTAL_SIZE:{" "}
+                                                    {dataSize !== 0
+                                                        ? dataSize
+                                                        : ""}
+                                                </div>
+                                                <button
+                                                    className="btn btn-secondary btn-sm wrap-word"
+                                                    onClick={copyLocalData}
+                                                >
+                                                    Transfer Data
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="middle middle-low">
+                                            <div>
+                                                {bagsList.length > 0 ? (
+                                                    bagsList.map(
+                                                        (bag, index) => (
+                                                            <p
+                                                                key={index}
+                                                                style={{
+                                                                    color: "yellow",
+                                                                    borderBottom:
+                                                                        "1px solid grey",
+                                                                }}
+                                                                className="data-list"
+                                                            >
+                                                                {" "}
+                                                                <span
+                                                                    style={{
+                                                                        fontSize: 16,
+                                                                        color: "white",
+                                                                    }}
+                                                                >{`${
+                                                                    index + 1
+                                                                }. `}</span>
+                                                                {
+                                                                    bag.split(
+                                                                        " "
+                                                                    )[0]
+                                                                }{" "}
+                                                                <br />{" "}
+                                                                <span
+                                                                    style={{
+                                                                        color: "silver",
+                                                                        fontSize:
+                                                                            "12px",
+                                                                    }}
+                                                                >
+                                                                    Size:{" "}
+                                                                    {
+                                                                        bag.split(
+                                                                            " "
+                                                                        )[1]
+                                                                    }
+                                                                </span>
+                                                            </p>
+                                                        )
+                                                    )
+                                                ) : (
+                                                    <p>EMPTY</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="bottom">
+                                            <button
+                                                onClick={listLocalRosbags}
+                                                className="btn btn-secondary btn-sm w-50 wrap-word"
+                                            >
+                                                Refresh
+                                            </button>
+                                            <button
+                                                onClick={deleteLocalRosbags}
+                                                className="btn btn-secondary btn-danger btn-sm w-50 wrap-word"
+                                            >
+                                                Delete All
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div className="heading">
+                                            {selectedPd && (
+                                                <h4>Data in External Drive</h4>
+                                            )}
+                                            <div
+                                                style={{
+                                                    display: "flex",
+                                                    gap: "10px",
+                                                    marginBottom: "10px",
+                                                    justifyContent: "flex-end",
+                                                    flexWrap: "wrap",
+                                                }}
+                                            >
+                                                {selectedPd && (
+                                                    <div className="datapath">
+                                                        Data in{" "}
+                                                        <span
+                                                            style={{
+                                                                color: "lime",
+                                                            }}
+                                                        >
+                                                            /{selectedPd}
+                                                            /rosbags/
+                                                        </span>{" "}
+                                                        {pdDataSize !== 0
+                                                            ? `(${pdDataSize})`
+                                                            : ""}
+                                                    </div>
+                                                )}
+                                                <select
+                                                    className="form-select-sm"
+                                                    style={
+                                                        selectedPd
+                                                            ? {
+                                                                  background:
+                                                                      "grey",
+                                                              }
+                                                            : {
+                                                                  background:
+                                                                      "grey",
+                                                              }
+                                                    }
+                                                    onChange={handlePdSelect}
+                                                    value={selectedPd}
+                                                >
+                                                    <option value="">
+                                                        Select Drive
+                                                    </option>
+                                                    {pendrives.map((pd) => (
+                                                        <option value={pd}>
+                                                            {pd}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                <button
+                                                    className="btn btn-secondary btn-sm wrap-word"
+                                                    onClick={listPendrives}
+                                                >
+                                                    Refresh Mounted Drives
+                                                </button>
+                                                {selectedPd && (
+                                                    <button
+                                                        className="btn btn-secondary btn-warning btn-sm wrap-word"
+                                                        onClick={() =>
+                                                            unmountPendrive()
+                                                        }
+                                                    >
+                                                        Unmount
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="middle middle-low">
+                                            {selectedPd ? (
+                                                <div>
+                                                    {pdBagsList.length > 0 ? (
+                                                        pdBagsList.map(
+                                                            (bag, index) =>
+                                                                bag
+                                                                    .toLowerCase()
+                                                                    .includes(
+                                                                        "unmount"
+                                                                    ) ? (
+                                                                    <p>{bag}</p>
+                                                                ) : (
+                                                                    <p
+                                                                        key={
+                                                                            index
+                                                                        }
+                                                                        style={{
+                                                                            color: "yellow",
+                                                                            borderBottom:
+                                                                                "1px solid grey",
+                                                                        }}
+                                                                        className="data-list"
+                                                                    >
+                                                                        {" "}
+                                                                        <span
+                                                                            style={{
+                                                                                fontSize: 16,
+                                                                                color: "white",
+                                                                            }}
+                                                                        >{`${
+                                                                            index +
+                                                                            1
+                                                                        }. `}</span>
+                                                                        {
+                                                                            bag.split(
+                                                                                " "
+                                                                            )[0]
+                                                                        }{" "}
+                                                                        <br />{" "}
+                                                                        <span
+                                                                            style={{
+                                                                                color: "silver",
+                                                                                fontSize:
+                                                                                    "12px",
+                                                                            }}
+                                                                        >
+                                                                            Size:{" "}
+                                                                            {
+                                                                                bag.split(
+                                                                                    " "
+                                                                                )[1]
+                                                                            }
+                                                                        </span>{" "}
+                                                                    </p>
+                                                                )
+                                                        )
+                                                    ) : (
+                                                        <p>EMPTY</p>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <div
+                                                    style={{
+                                                        textAlign: "center",
+                                                    }}
+                                                >
+                                                    Select a Drive
+                                                </div>
+                                            )}
+                                        </div>
+                                        {selectedPd && (
+                                            <div className="bottom">
+                                                <button
+                                                    className="btn btn-secondary btn-sm w-50 wrap-word"
+                                                    onClick={() =>
+                                                        listPdRosbags(
+                                                            selectedPd
+                                                        )
+                                                    }
+                                                >
+                                                    Refresh
+                                                </button>
+                                                <button
+                                                    className="btn btn-secondary btn-danger btn-sm w-50 wrap-word"
+                                                    onClick={deletePdRosbags}
+                                                >
+                                                    Delete All
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            ReactDOM.render(<App />, document.getElementById("root"));
+        </script>
+        <script src="/static/js/popper.min.js"></script>
+        <script src="/static/js/bootstrap.min.js"></script>
+    </body>
+</html>
