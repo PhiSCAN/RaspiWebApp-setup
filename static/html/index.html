@@ -164,6 +164,85 @@
                 );
             }
 
+            function LogsComponent({ setShowLogs, showLogs, isMobile }) {
+                const [logs, setLogs] = useState([]);
+                const intervalId = useRef(null);
+                const scrollRef = useRef(null);
+
+                function arraysEqual(a, b) {
+                    if (a === b) return true; // same reference
+                    if (a.length !== b.length) return false;
+
+                    for (let i = 0; i < a.length; i++) {
+                        if (a[i] !== b[i]) return false;
+                    }
+                    return true;
+                }
+
+                useEffect(() => {
+                    if (intervalId.current) {
+                        clearInterval(intervalId.current);
+                    }
+                    if (scrollRef.current) {
+                        scrollRef.current.scrollTop =
+                            scrollRef.current.scrollHeight;
+                    }
+
+                    intervalId.current = setInterval(() => {
+                        console.log("logginnggg....");
+                        fetch("/logs")
+                            .then((res) => res.json())
+                            .then((data) => {
+                                if (!arraysEqual(logs, data)) {
+                                    setLogs(data);
+                                }
+                            })
+                            .catch((err) => {
+                                console.log(err.message);
+                            });
+                    }, 2000);
+                    return () => clearInterval(intervalId.current);
+                }, [logs]);
+                return (
+                    <div className="log-body">
+                        <div className="action-bar">
+                            <div className="text-dark p-2 fw-bold">
+                                Server Logs
+                            </div>
+                            <div
+                                className="btn btn-danger rounded"
+                                onClick={() => setShowLogs(false)}
+                            >
+                                X
+                            </div>
+                        </div>
+                        <div className={`logs`} style={{fontSize:isMobile?12:14}} ref={scrollRef}>
+                            {logs.length > 0 ? (
+                                logs.map((log,i) => {
+                                    const type = log.split(" - ");
+                                    console.log(type);
+                                    const lineColor = type.includes("INFO")
+                                        ? "lime"
+                                        : type.includes("ERROR")
+                                        ? "red"
+                                        : "orange";
+                                    return (
+                                        <p
+                                            key={log.split(" - ")[0]}
+                                            style={{ color: lineColor, borderBottom:"1px solid #ffffff2e" }}
+                                        >
+                                            <span style={{fontSize:"14px"}}>{i}&#8627; </span>{log}
+                                        </p>
+                                    );
+                                })
+                            ) : (
+                                <p align="center">Fetching Latest Logs...</p>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
             function App() {
                 // -1 ->idle 0->danger 1->success 2->progress
 
@@ -209,6 +288,7 @@
                 const [dataSize, setDataSize] = useState(0);
                 const [pdDataSize, setPdDataSize] = useState(0);
                 const [isPowerToggled, setIsPowerToggled] = useState(false);
+                const [showLogs, setShowLogs] = useState(false);
                 const resetAllButtonStatus = () => {
                     setButtonStates({
                         dataSync: -1,
@@ -444,7 +524,7 @@
                         alert(rosbagResult.msg);
                     } else {
                         setBagsList(rosbagResult.data);
-                        setDataSize(rosbagResult.size??0);
+                        setDataSize(rosbagResult.size ?? 0);
                     }
                 }
 
@@ -601,8 +681,8 @@
                     const rosbagResult = await rosbagResp.json();
                     if (!rosbagResult.success) {
                         alert(rosbagResult.msg);
-                        setShowOverlay(false)
-                        setDialog("")
+                        setShowOverlay(false);
+                        setDialog("");
                     } else {
                         listPdRosbags(selectedPd);
                         // alert("COPIED ALL FILES TO PENDRIVE!!!!!!!");
@@ -679,7 +759,7 @@
                         alert(rosbagResult.msg);
                     } else {
                         setPdBagsList(rosbagResult.data);
-                        setPdDataSize(rosbagResult.size??0);
+                        setPdDataSize(rosbagResult.size ?? 0);
                     }
                 }
 
@@ -866,60 +946,172 @@
                                 )}
                             </div>
                         )}
-                        <div className="nav-part">
-                            <div></div>
-                            <div>
-                                <button
-                                    onClick={powerOff}
-                                    style={{ background: "transparent" }}
-                                    disabled={!isAlive || isPowerToggled}
-                                    className="btn btn-secondary"
-                                    title="System Shutdown"
-                                >
-                                    {isAlive && !isPowerToggled ? (
-                                        <img
-                                            src="/static/icons/power-g.png"
-                                            width="32px"
-                                            alt="Alive"
-                                        />
-                                    ) : isAlive && isPowerToggled ? (
-                                        <img
-                                            src="/static/icons/loading.gif"
-                                            width="32px"
-                                            alt="loading"
-                                        />
-                                    ) : (
-                                        <img
-                                            src="/static/icons/power-r.png"
-                                            width="32px"
-                                            alt="Dead"
-                                        />
-                                    )}
-                                </button>
-                                &nbsp;
-                                <button
-                                    onClick={rebootPi}
-                                    style={{ background: "transparent" }}
-                                    className="btn btn-secondary"
-                                    title="System Reboot"
-                                >
-                                    <img
-                                        style={{ filter: "invert()" }}
-                                        src="/static/icons/return.png"
-                                        width="32px"
-                                        alt="reboot"
-                                    />
-                                </button>
+                        <div className="nav-part mt-2">
+                            <div
+                                style={{
+                                    width: 400,
+                                    display: "flex",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                <img
+                                    src="/static/icons/phi-logo.png"
+                                    alt="Phicode"
+                                    width="42px"
+                                />
+                                <div>
+                                    {" "}
+                                    <h4>PhiSCAN</h4>{" "}
+                                </div>
                             </div>
                         </div>
                         <div
                             className="body-part"
                             style={{
-                                padding: isMobile ? "0" : "60px",
+                                padding: isMobile ? "0" : "10px 60px 60px 60px",
                                 marginBottom: isMobile ? "40px" : "auto",
                             }}
                         >
                             <div className="inner-body">
+                                {showLogs && (
+                                    <LogsComponent showLogs={showLogs} setShowLogs={setShowLogs} isMobile={isMobile} />
+                                )}
+
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        gap: "10px",
+                                        flexWrap: "wrap-reverse",
+                                    }}
+                                >
+                                    <div
+                                        class="btn-group"
+                                        style={{
+                                            width: isMobile ? "100%" : "auto",
+                                        }}
+                                    >
+                                        <button
+                                            className="btn btn-secondary"
+                                            onClick={() =>
+                                                setFps((prev) =>
+                                                    prev <= 10 ? 10 : prev - 1
+                                                )
+                                            }
+                                        >
+                                            {" "}
+                                            -{" "}
+                                        </button>
+                                        <button
+                                            className="btn btn-secondary"
+                                            title="Timer speed"
+                                        >
+                                            {" "}
+                                            {fps}{" "}
+                                        </button>
+                                        <button
+                                            className="btn btn-secondary"
+                                            onClick={() =>
+                                                setFps((prev) =>
+                                                    prev >= 60 ? 60 : prev + 1
+                                                )
+                                            }
+                                        >
+                                            {" "}
+                                            +{" "}
+                                        </button>
+                                        <button
+                                            className={`btn ${
+                                                !udpStarted
+                                                    ? "btn-primary"
+                                                    : "btn-danger"
+                                            }`}
+                                            onClick={() => {
+                                                startSendingTimestamps(fps);
+                                            }}
+                                        >
+                                            {udpStarted
+                                                ? "Stop UDP"
+                                                : "Start UDP"}{" "}
+                                            &nbsp;
+                                            <span style={{ fontSize: "12px" }}>
+                                                server state:{" "}
+                                                <span
+                                                    style={{
+                                                        color:
+                                                            udpStatus ===
+                                                            "Active"
+                                                                ? "lime"
+                                                                : udpStatus ===
+                                                                  "Idle"
+                                                                ? "white"
+                                                                : "red",
+                                                    }}
+                                                >
+                                                    ({udpStatus})
+                                                </span>
+                                            </span>
+                                        </button>
+                                    </div>
+                                    <div className="btn-group">
+                                        <button
+                                            className="btn btn-light"
+                                            onClick={() => setShowLogs(true)}
+                                        >
+                                            <img
+                                                src="/static/icons/terminal.png"
+                                                width="28px"
+                                                alt="Alive"
+                                            />
+                                        </button>
+                                        <button
+                                            onClick={powerOff}
+                                            style={{
+                                                background: "transparent",
+                                            }}
+                                            disabled={
+                                                !isAlive || isPowerToggled
+                                            }
+                                            className="btn btn-secondary"
+                                            title="System Shutdown"
+                                        >
+                                            {isAlive && !isPowerToggled ? (
+                                                <img
+                                                    src="/static/icons/power-g.png"
+                                                    width="28px"
+                                                    alt="Alive"
+                                                />
+                                            ) : isAlive && isPowerToggled ? (
+                                                <img
+                                                    src="/static/icons/loading.gif"
+                                                    width="28px"
+                                                    alt="loading"
+                                                />
+                                            ) : (
+                                                <img
+                                                    src="/static/icons/power-r.png"
+                                                    width="28px"
+                                                    alt="Dead"
+                                                />
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={rebootPi}
+                                            style={{
+                                                background: "transparent",
+                                            }}
+                                            className="btn btn-secondary"
+                                            title="System Reboot"
+                                        >
+                                            <img
+                                                style={{ filter: "invert()" }}
+                                                src="/static/icons/return.png"
+                                                width="28px"
+                                                alt="reboot"
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
                                 <div className="container-upper">
                                     <div>
                                         <div className="heading">
@@ -928,7 +1120,10 @@
                                         <div className="middle">
                                             <div>
                                                 <div>Motor Speed: </div>
-                                                <div>
+                                                <div
+                                                    className="btn-group"
+                                                    style={{ width: 150 }}
+                                                >
                                                     <button
                                                         className="btn btn-secondary btn-sm wrap-word"
                                                         onClick={() =>
@@ -940,12 +1135,12 @@
                                                         }
                                                     >
                                                         {"-"}
-                                                    </button>{" "}
-                                                    &nbsp;
+                                                    </button>
+
                                                     <button className="btn btn-secondary btn-sm wrap-word">
                                                         {custVel}
-                                                    </button>{" "}
-                                                    &nbsp;
+                                                    </button>
+
                                                     <button
                                                         className="btn btn-secondary btn-sm wrap-word"
                                                         onClick={() =>
@@ -962,9 +1157,9 @@
                                             </div>
                                             <div>
                                                 <div>Direction:</div>
-                                                <div>
+                                                <div style={{ width: 150 }}>
                                                     <select
-                                                        className="form-select-sm"
+                                                        className="form-select-sm w-100"
                                                         style={{
                                                             background: "grey",
                                                         }}
@@ -1138,7 +1333,10 @@
                                                 }}
                                             >
                                                 <div className="datapath">
-                                                    TOTAL_SIZE: {dataSize !== 0 ? dataSize : ''}
+                                                    TOTAL_SIZE:{" "}
+                                                    {dataSize !== 0
+                                                        ? dataSize
+                                                        : ""}
                                                 </div>
                                                 <button
                                                     className="btn btn-secondary btn-sm wrap-word"
@@ -1230,8 +1428,18 @@
                                             >
                                                 {selectedPd && (
                                                     <div className="datapath">
-                                                        Data in <span style={{color:"lime"}}>/{selectedPd}
-                                                        /rosbags/</span> {pdDataSize !== 0 ? `(${pdDataSize})` : ''}
+                                                        Data in{" "}
+                                                        <span
+                                                            style={{
+                                                                color: "lime",
+                                                            }}
+                                                        >
+                                                            /{selectedPd}
+                                                            /rosbags/
+                                                        </span>{" "}
+                                                        {pdDataSize !== 0
+                                                            ? `(${pdDataSize})`
+                                                            : ""}
                                                     </div>
                                                 )}
                                                 <select

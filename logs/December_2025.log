@@ -1,0 +1,104 @@
+2025-12-16 16:17:23,737 - app - INFO - Initializing motor..
+2025-12-16 16:17:23,737 - app - INFO - got velocity 5
+2025-12-16 16:17:23,738 - app - INFO - got direction 1
+2025-12-16 16:17:23,738 - app - INFO - got vel 10
+2025-12-16 16:17:23,738 - app - INFO - Requesting scanner to start motor
+2025-12-16 16:17:30,213 - app - INFO - Initializing UDP
+2025-12-16 16:17:30,215 - app - INFO - UDP Initialized
+2025-12-16 16:17:31,772 - app - INFO - Stopping UDP Stream
+2025-12-16 16:17:31,772 - app - INFO - UDP Streams Stopped
+2025-12-16 16:17:33,789 - app - ERROR - Error: HTTPConnectionPool(host='192.168.1.80', port=3000): Max retries exceeded with url: /motor/start?vel=5&d_vol_pwr=12=&d_vol_lim=12&m_vol_lim=10 (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x7f5a235a28e0>, 'Connection to 192.168.1.80 timed out. (connect timeout=10)'))
+2025-12-16 16:17:42,188 - app - INFO - Stopping Lidar motor
+2025-12-16 16:17:42,188 - app - INFO - Requesting scanner to stop motor
+2025-12-16 16:17:45,725 - app - INFO - hit /ptpd with state on
+2025-12-16 16:17:45,725 - app - INFO - ptpd process started
+2025-12-16 16:17:45,734 - app - INFO - ptpd turned on
+2025-12-16 16:17:45,744 - app - INFO - hit /roscore with state on
+2025-12-16 16:17:45,744 - app - INFO - starting roscore process
+2025-12-16 16:17:50,753 - app - INFO - roscore running [66919]
+2025-12-16 16:17:50,773 - app - INFO - hit /imu with state on
+2025-12-16 16:17:50,774 - app - INFO - Initializing imu
+2025-12-16 16:17:50,777 - app - INFO - imu is initialized [66988]
+2025-12-16 16:17:50,788 - app - INFO - hit /lidar with state on
+2025-12-16 16:17:50,788 - app - INFO - turning on Lidar
+2025-12-16 16:17:50,788 - app - INFO - got lidarRPM:600 from config
+2025-12-16 16:17:50,803 - app - INFO - lidar turned on [66991]
+2025-12-16 16:17:50,814 - app - INFO - hit /topic-statuses
+2025-12-16 16:17:52,202 - app - ERROR - Error: HTTPConnectionPool(host='192.168.1.80', port=3000): Max retries exceeded with url: /motor/stop (Caused by ConnectTimeoutError(<urllib3.connection.HTTPConnection object at 0x7f5a235b6be0>, 'Connection to 192.168.1.80 timed out. (connect timeout=10)'))
+2025-12-16 16:18:10,827 - app - INFO - Checking if imu and lidar initialized successfully
+2025-12-16 16:18:25,854 - app - INFO - topics - [false, false, false]
+2025-12-16 16:39:33,553 - app - INFO - hit /ptpd with state on
+2025-12-16 16:39:33,553 - app - INFO - ptpd process started
+2025-12-16 16:39:33,564 - app - INFO - ptpd turned on
+2025-12-16 16:39:33,597 - app - INFO - hit /roscore with state on
+2025-12-16 16:39:33,597 - app - INFO - starting roscore process
+2025-12-16 16:39:38,609 - app - INFO - roscore running [90117]
+2025-12-16 16:39:38,652 - app - INFO - hit /imu with state on
+2025-12-16 16:39:38,653 - app - INFO - Initializing imu
+2025-12-16 16:39:38,656 - app - INFO - imu is initialized [90165]
+2025-12-16 16:39:38,683 - app - INFO - hit /lidar with state on
+2025-12-16 16:39:38,683 - app - INFO - turning on Lidar
+2025-12-16 16:39:38,683 - app - INFO - got lidarRPM:600 from config
+2025-12-16 16:39:38,686 - app - INFO - lidar turned on [90168]
+2025-12-16 16:39:38,697 - app - INFO - hit /topic-statuses
+2025-12-16 16:39:58,717 - app - INFO - Checking if imu and lidar initialized successfully
+2025-12-16 16:44:13,901 - app - INFO - hit /ptpd with state on
+2025-12-16 16:44:13,901 - app - INFO - ptpd process started
+2025-12-16 16:44:13,913 - app - INFO - ptpd turned on
+2025-12-16 16:44:13,933 - app - INFO - hit /roscore with state on
+2025-12-16 16:44:13,933 - app - INFO - starting roscore process
+2025-12-16 16:44:18,944 - app - INFO - roscore running [91081]
+2025-12-16 16:44:18,996 - app - INFO - hit /imu with state on
+2025-12-16 16:44:18,996 - app - INFO - Initializing imu
+2025-12-16 16:44:18,999 - app - INFO - imu is initialized [91128]
+2025-12-16 16:44:19,041 - app - INFO - hit /lidar with state on
+2025-12-16 16:44:19,042 - app - INFO - turning on Lidar
+2025-12-16 16:44:19,042 - app - INFO - got lidarRPM:600 from config
+2025-12-16 16:44:19,047 - app - INFO - lidar turned on [91131]
+2025-12-16 16:44:19,061 - app - INFO - hit /topic-statuses
+2025-12-16 16:44:39,077 - app - INFO - Checking if imu and lidar initialized successfully
+2025-12-16 16:44:54,103 - app - INFO - topics - [false, false, false]
+2025-12-18 11:09:08,496 - app - INFO - Initializing motor..
+2025-12-18 11:09:08,497 - app - INFO - got velocity 5
+2025-12-18 11:09:08,497 - app - INFO - got direction 1
+2025-12-18 11:09:08,497 - app - INFO - got vel 10
+2025-12-18 11:09:08,498 - app - INFO - Requesting scanner to start motor
+2025-12-18 11:09:08,500 - app - ERROR - Error: HTTPConnectionPool(host='192.168.1.80', port=3000): Max retries exceeded with url: /motor/start?vel=5&d_vol_pwr=12=&d_vol_lim=12&m_vol_lim=10 (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7fc2cef36dc0>: Failed to establish a new connection: [Errno 101] Network is unreachable'))
+2025-12-18 11:09:09,835 - app - INFO - Stopping Lidar motor
+2025-12-18 11:09:09,835 - app - INFO - Requesting scanner to stop motor
+2025-12-18 11:09:09,838 - app - ERROR - Error: HTTPConnectionPool(host='192.168.1.80', port=3000): Max retries exceeded with url: /motor/stop (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7fc2ccec1760>: Failed to establish a new connection: [Errno 101] Network is unreachable'))
+2025-12-18 11:09:11,741 - app - INFO - hit /ptpd with state on
+2025-12-18 11:09:11,741 - app - INFO - ptpd process started
+2025-12-18 11:09:11,746 - app - INFO - ptpd turned on
+2025-12-18 11:09:11,764 - app - INFO - hit /roscore with state on
+2025-12-18 11:09:11,765 - app - INFO - starting roscore process
+2025-12-18 11:09:16,772 - app - INFO - roscore running [7955]
+2025-12-18 11:09:16,793 - app - INFO - hit /imu with state on
+2025-12-18 11:09:16,793 - app - INFO - Initializing imu
+2025-12-18 11:09:16,797 - app - INFO - imu is initialized [8019]
+2025-12-18 11:09:16,817 - app - INFO - hit /lidar with state on
+2025-12-18 11:09:16,818 - app - INFO - turning on Lidar
+2025-12-18 11:09:16,818 - app - INFO - got lidarRPM:600 from config
+2025-12-18 11:09:16,824 - app - INFO - lidar turned on [8022]
+2025-12-18 11:09:16,842 - app - INFO - hit /topic-statuses
+2025-12-18 11:09:30,849 - app - INFO - hit /record with state on
+2025-12-18 11:09:30,849 - app - INFO - Getting ready to record
+2025-12-18 11:09:30,849 - app - INFO - starting to record - /bin/bash -c '/home/sajjad/Documents/webapp/scripts/record.sh /home/sajjad/rosbags/18-Dec-2025_11_09_30'
+2025-12-18 11:09:30,853 - app - INFO - rosbag record started [8135]
+2025-12-18 11:09:36,860 - app - INFO - Checking if imu and lidar initialized successfully
+2025-12-18 11:09:39,189 - app - INFO - hit /imu with state off
+2025-12-18 11:09:39,190 - app - INFO - Stopping imu process
+2025-12-18 11:09:39,201 - app - ERROR - Error: {e}
+2025-12-18 11:09:39,202 - app - ERROR - Error: imu Process Does not Exist
+2025-12-18 11:09:39,244 - app - INFO - hit /lidar with state off
+2025-12-18 11:09:39,245 - app - INFO - turning off lidar
+2025-12-18 11:09:39,245 - app - ERROR - Error: lidar Process Does not Exist
+2025-12-18 11:09:39,265 - app - INFO - hit /roscore with state off
+2025-12-18 11:09:39,265 - app - INFO - killing roscore process
+2025-12-18 11:09:39,270 - app - INFO - Checking for roscore process
+2025-12-18 11:09:39,271 - app - INFO - killing roscore process [7955]
+2025-12-18 11:09:39,271 - app - INFO - roscore stopped
+2025-12-18 11:09:39,285 - app - INFO - hit /record with state off
+2025-12-18 11:09:39,286 - app - INFO - stopping rosbag record
+2025-12-18 11:09:39,289 - app - INFO - rosbag record stopped
+2025-12-18 11:09:41,114 - app - INFO - topics - [false, false, false]

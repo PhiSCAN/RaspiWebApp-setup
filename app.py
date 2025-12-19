@@ -18,6 +18,7 @@ import time
 import serial.tools.list_ports
 from time_stamp_sender import TimestampSender
 import asyncio, threading
+from utils.logger import setup_logger, read_latest_log_lines
 
 
 serial_port = ""
@@ -26,6 +27,7 @@ ACCEPTABLE_OCCURANCE = 50
 consec_fix = 0
 duration = 60  # seconds
 
+logger = setup_logger("app")
 
 home = expanduser("~")
 app = Flask(__name__, static_folder="static")
@@ -193,11 +195,15 @@ def qr():
 
 @app.get("/topic-statuses")
 def topic_statuses():
+    logger.info("hit /topic-statuses")
     try:
         sleep(20)
+        logger.info("Checking if imu and lidar initialized successfully")
         data = [check_imu(), check_imu2(), check_lidar()]
+        logger.info(f"topics - {json.dumps(data)}")
         return jsonify({"success": True, "data": data})
     except Exception as e:
+        logger.error(f"Error: {e}")
         return jsonify({"success": False, "msg": str(e)})
 
 @app.get("/file-count")
@@ -214,24 +220,35 @@ def handle_file_count():
 @app.get("/turn-off-lidarmotor")
 def turn_off_lidar_motor():
     try:
+        logger.info("Stopping Lidar motor")
+        logger.info("Requesting scanner to stop motor")
         res = requests.get(f"{scanner_ip}/motor/stop", timeout=10)
         res.raise_for_status()
+        logger.info("Motor stopped!")
         return jsonify({"success": True, "msg": "request to lidar motor:success"})
     except Exception as e:
+        logger.error(f"Error: {e}")
         return jsonify({"success": False, "msg": "request to lidar motor:failed"})
 
 
 @app.post("/change-lidar-rot-speed")
 def change_rotation_speed():
+    logger.info("Initializing motor..")
     velocity = get_json_val("velocity")
+    logger.info(f"got velocity {velocity}")
     direction = get_json_val("direction")
+    logger.info(f"got direction {direction}")
     try:
         vel = request.args.get("vel")
+        logger.info(f"got vel {vel}")
     except Exception as e:
+        logger.error(f"Error: {e}")
         raise Exception("no vel")
     if not (velocity or direction):
+        logger.warning(f"velocity or direction is missing check config.json")
         return jsonify({"success": False, "msg": "request to scanner:failed"})
     try:
+        logger.info(f"Requesting scanner to start motor")
         res = requests.get(
             # f"{scanner_ip}/change-lidar-rot-speed?dir={direction}&vel={velocity}",
             # f"{scanner_ip}/motor/start?vel=5&d_vol_pwr=12=&d_vol_lim=12&m_vol_lim=3",
@@ -239,15 +256,19 @@ def change_rotation_speed():
             timeout=10,
         )
         res.raise_for_status()
+        logger.info(f"Motor started!")
         return jsonify({"success": True, "msg": "request to scanner:success"})
     except Exception as e:
+        logger.error(f"Error: {e}")
         return jsonify({"success": False, "msg": "request to scanner:failed"})
 
 
 @app.get("/ptpd/<state>")
 def handle_ptpd(state):
+    logger.info(f"hit /ptpd with state {state}")
     try:
         if state == "on":
+            logger.info(f"ptpd process started")
             subprocess.Popen(
                 f"echo {PASSWORD} | sudo -S mount -a",
                 stdout=subprocess.DEVNULL,
@@ -259,31 +280,41 @@ def handle_ptpd(state):
                 shell=True,
             )
             pids["ptpd"] = process.pid
+            logger.info("ptpd turned on")
             print("ptpd turned on")
             return jsonify({"success": True, "msg": "ptpd turned on"})
         elif state == "off":
             if "ptpd" not in pids:
+                logger.warning("ptpd process does not exist")
                 raise Exception("ptpd Process Does not Exist")
+            logger.info("checking if ptpd pid exist")
             if check_pid_exists(pids["ptpd"]):
                 # os.killpg(os.getpgid(pids["ptpd"]), signal.SIGTERM)
                 pids["ptpd"] = None
+                logger.info("ptpd pid found and stopped")
                 print("ptpd stopped successfully")
                 return jsonify({"success": True, "msg": "ptpd turned off"})
             else:
+                logger.warning("ptpd process does not exist")
                 raise Exception("ptpd Process Does not Exist")
     except Exception as e:
+        logger.error(f"Error: {e}")
         print(f"ptpd err - {e}")
         return jsonify({"success": False, "msg": "request to ptpd:failed"})
 
 
 @app.get("/lidar/<state>")
 def handle_lidar_state(state):
+    logger.info(f"hit /lidar with state {state}")
     try:
         if state == "on":
+            logger.info(f"turning on Lidar")
             try:
                 rpm = get_json_val("lidarRPM")
+                logger.info(f"got lidarRPM:{rpm} from config")
             except Exception as e:
                 rpm = 150
+                logger.warning(f"using default lidarRPM:{rpm} - {e}")
             cmd = f"/bin/bash -c '{root_dir}/scripts/launch_lidar.sh {rpm}'"
             process = subprocess.Popen(
                 cmd,
@@ -294,26 +325,32 @@ def handle_lidar_state(state):
             )
             pids["lidar"] = process.pid
             print("lidar turned on")
+            logger.info(f"lidar turned on [{process.pid}]")
             return jsonify({"success": True, "msg": "lidar turned on"})
         elif state == "off":
+            logger.info("turning off lidar")
             if "lidar" not in pids:
+                logger.warning("lidar process does not exist")
                 raise Exception("lidar Process Does not Exist")
             if check_pid_exists(pids["lidar"]):
+                logger.info("killing lidar process")
                 os.killpg(os.getpgid(pids["lidar"]), signal.SIGTERM)
                 pids["lidar"] = None
-                print("lidar stopped successfully")
+                logger.info(f"lidar turned off")
                 return jsonify({"success": True, "msg": "lidar turned off"})
             else:
                 raise Exception("lidar Process Does not Exist")
     except Exception as e:
-        print(f"lidar err - {e}")
+        logger.error(f"Error: {e}")
         return jsonify({"success": False, "msg": "request to lidar:failed"})
 
 
 @app.get("/roscore/<state>")
 def handle_roscore_state(state):
+    logger.info(f"hit /roscore with state {state}")
     try:
         if state == "on":
+            logger.info("starting roscore process")
             cmd = f"/opt/ros/noetic/bin/roscore"
             process = subprocess.Popen(
                 cmd.split(" "),
@@ -322,9 +359,10 @@ def handle_roscore_state(state):
             )
             pids["roscore"] = process.pid
             sleep(5)
-            print("roscore turned on")
+            logger.info(f"roscore running [{pids['roscore']}]")
             return jsonify({"success": True, "msg": "roscore turned on"})
         elif state == "off":
+            logger.info("killing roscore process")
             stop_all_ros_nodes = "killall -9 rosmaster && killall -9 rosout"
             subprocess.Popen(
                 stop_all_ros_nodes.split(" "),
@@ -333,49 +371,59 @@ def handle_roscore_state(state):
                 stderr=subprocess.DEVNULL,
             )
             if "roscore" not in pids:
+                logger.info("roscore process does not exist")
                 raise Exception("roscore Process Does not Exist")
+            logger.info("Checking for roscore process")
             if check_pid_exists(pids["roscore"]):
+                logger.info(f"killing roscore process [{pids['roscore']}]")
                 os.killpg(os.getpgid(pids["roscore"]), signal.SIGTERM)
                 pids["roscore"] = None
-                print("roscore stopped successfully")
+                logger.info("roscore stopped")
 
                 return jsonify({"success": True, "msg": "roscore turned off"})
             else:
                 raise Exception("roscore Process Does not Exist")
     except Exception as e:
-        print(f"roscore err - {e}")
+        logger.error(f"Error: {e}")
         return jsonify({"success": False, "msg": "request to roscore:failed"})
 
 
 @app.get("/imu/<state>")
 def handle_imu_state(state):
+    logger.info(f"hit /imu with state {state}")
     try:
         if state == "on":
+            logger.info("Initializing imu")
             cmd = f"/bin/bash -c {root_dir}/scripts/launch_imu.sh"
             process = subprocess.Popen(
                 cmd.split(" "),
                 preexec_fn=os.setsid,
             )
             pids["imu"] = process.pid
+            logger.info(f"imu is initialized [{process.pid}]")
             print("imu turned on")
             return jsonify({"success": True, "msg": "imu turned on"})
         elif state == "off":
+            logger.info("Stopping imu process")
             try:
                 subprocess.check_output(f"fuser -k 1234/udp", shell=True)
                 subprocess.check_output(f"fuser -k 1234/udp", shell=True)
             except Exception as e:
-                e
+                logger.error("Error: {e}")
             if "imu" not in pids:
+                logger.warning("imu process does not exist")
                 raise Exception("imu Process Does not Exist")
             if check_pid_exists(pids["imu"]):
+                logger.info("killing imu process")
                 os.killpg(os.getpgid(pids["imu"]), signal.SIGTERM)
                 pids["imu"] = None
-                print("imu stopped successfully")
+                logger.info("imu stopped")
                 return jsonify({"success": True, "msg": "imu turned off"})
             else:
                 raise Exception("imu Process Does not Exist")
     except Exception as e:
         print(f"imu err - {e}")
+        logger.error(f"Error: {e}")
         return jsonify({"success": False, "msg": "request to imu:failed"})
 
 
@@ -394,8 +442,10 @@ def handle_gps_state():
 
 @app.get("/record/<state>")
 def record_start(state):
+    logger.info(f"hit /record with state {state}")
     try:
         if state == "on":
+            logger.info("Getting ready to record")
             if "record" in pids:
                 if check_pid_exists(pids["record"]):
                     raise Exception("Process still running")
@@ -405,14 +455,15 @@ def record_start(state):
             txt_path = f"{local_rosbag_path}/{current_datetime}.txt"
             bag_cmd = f"/bin/bash -c '{root_dir}/scripts/record.sh {bag_path}'"
             print(bag_cmd)
+            logger.info(f"starting to record - {bag_cmd}")
             bag_process = subprocess.Popen(
                 bag_cmd,
                 shell=True,
                 stdout=subprocess.DEVNULL,
                 preexec_fn=os.setsid,
             )
-            print("rosbag record started")
             pids["record"] = bag_process.pid
+            logger.info(f"rosbag record started [{bag_process.pid}]")
             gps_cmd = f"/usr/bin/python3.8 {root_dir}/scripts/record_gps.py --ubx {gps_path} --txt {txt_path}"
             gps_process = subprocess.Popen(
                 gps_cmd.split(" "),
@@ -422,6 +473,7 @@ def record_start(state):
             pids["gps_record"] = gps_process.pid
             return jsonify({"success": True, "msg": "rosbag recording started"})
         elif state == "off":
+            logger.info("stopping rosbag record")
             if "record" in pids:
                 if check_pid_exists(pids["record"]) or check_pid_exists(
                     pids["gps_record"]
@@ -430,6 +482,7 @@ def record_start(state):
                         os.killpg(os.getpgid(pids["record"]), signal.SIGTERM)
                         pids["record"] = None
                         print("rosbag record STOPPED")
+                        logger.info("rosbag record stopped")
                     elif check_pid_exists(pids["gps_record"]):
                         os.killpg(os.getpgid(pids["gps_record"]), signal.SIGTERM)
                         pids["gps_record"] = None
@@ -440,6 +493,7 @@ def record_start(state):
         raise Exception("route does not exist")
     except Exception as e:
         print(str(e))
+        logger.error(f"Error: {e}")
         return jsonify({"success": False, "msg": str(e)})
 
 
@@ -558,17 +612,25 @@ def handle_bags(action):
 
 @app.post("/start-udp")
 def start_udp():
+    logger.info("Initializing UDP")
     body = request.get_json()
     # body = request.get_json()
     # schedule sender.start() on our long‐lived loop:
     asyncio.run_coroutine_threadsafe(sender.start(int(body['fps'])), loop)
+    logger.info("UDP Initialized")
     return jsonify({"success": True, "msg": "Active"})
 
 @app.get("/stop-udp")
 def stop_udp():
     # schedule sender.stop() on that same loop:
+    logger.info("Stopping UDP Stream")
     asyncio.run_coroutine_threadsafe(sender.stop(), loop)
+    logger.info("UDP Streams Stopped")
     return jsonify({"success": True, "msg": "UDP sender stopping…"})
+
+@app.get("/logs")
+def list_latest_logs():
+    return jsonify(read_latest_log_lines(os.path.join(root_dir, "logs")))
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
