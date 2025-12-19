@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  phiscan:
+    image: phiscan:v2
+    container_name: phiscan
+    privileged: true
+    network_mode: host
+    stdin_open: true     # -i
+    tty: true            # -t
+    restart: unless-stopped
+
+    volumes:
+      - /home/pi/rosbags:/rosbags
+      - /media/pi:/media/root
+      - /home/pi/Documents/logs:/webapp/logs
+      - /dev:/dev
